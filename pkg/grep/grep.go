@@ -11,14 +11,12 @@ import (
 
 // Options grep command options
 type Options struct {
-	Pattern     string
 	IgnoreCase  bool
 	LineNumber  bool
 	Count       bool
 	Invert      bool
 	OnlyMatch   bool
 	WordRegexp  bool
-	ExtendedReg bool
 	FixedString bool
 	Color       string
 }
