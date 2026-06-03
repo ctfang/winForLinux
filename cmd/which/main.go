@@ -32,12 +32,19 @@ func main() {
 		}
 	}
 
+	if len(commands) == 0 {
+		fmt.Fprintf(os.Stderr, "Usage: which [-a] COMMAND...\n")
+		os.Exit(2)
+	}
+
+	exitCode := 0
 	for _, cmd := range commands {
 		if showAll {
 			results, err := which.WhichAll(cmd)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "which: %s: %v\n", cmd, err)
-				os.Exit(1)
+				exitCode = 1
+				continue
 			}
 			for _, r := range results {
 				fmt.Println(r)
@@ -46,9 +53,11 @@ func main() {
 			result, err := which.Which(cmd)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "which: %s: %v\n", cmd, err)
-				os.Exit(1)
+				exitCode = 1
+				continue
 			}
 			fmt.Println(result)
 		}
 	}
+	os.Exit(exitCode)
 }
