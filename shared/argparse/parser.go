@@ -7,7 +7,7 @@ var linuxOptions = map[string]bool{
 	"l": true, "a": true, "h": true, "t": true,
 	"R": true, "r": true, "1": true, "d": true,
 	"F": true, "S": true, "i": true,
-	"all": true, "color": true,
+	"all": true, "color": true, "human-readable": true,
 }
 
 // ParseArgs parses command-line arguments.
@@ -33,9 +33,14 @@ func ParseArgs(args []string) (map[string]string, []string) {
 			for _, ch := range flags {
 				opts[string(ch)] = ""
 			}
-		} else if strings.HasPrefix(arg, "/") && len(arg) == 2 {
-			// Windows style: /W, /B
-			opts[arg[1:]] = ""
+		} else if strings.HasPrefix(arg, "/") && len(arg) >= 2 {
+			// Windows style: /W, /B, /O:value, /A:value
+			flag := arg[1:]
+			if idx := strings.Index(flag, ":"); idx != -1 {
+				opts[flag[:idx]] = flag[idx+1:]
+			} else {
+				opts[flag] = ""
+			}
 		} else {
 			// Positional argument
 			positional = append(positional, arg)

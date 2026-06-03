@@ -9,7 +9,7 @@ import (
 )
 
 // FormatWindows generates Windows dir style output
-func FormatWindows(dir string, opts Options) string {
+func FormatWindows(dir string, opts Options) (string, error) {
 	var sb strings.Builder
 
 	absDir, err := filepath.Abs(dir)
@@ -31,8 +31,7 @@ func FormatWindows(dir string, opts Options) string {
 	// Read directory
 	entries, err := os.ReadDir(dir)
 	if err != nil {
-		sb.WriteString(fmt.Sprintf("Error reading directory: %v\n", err))
-		return sb.String()
+		return "", fmt.Errorf("reading directory %s: %w", dir, err)
 	}
 
 	fileCount := 0
@@ -79,7 +78,7 @@ func FormatWindows(dir string, opts Options) string {
 	sb.WriteString(fmt.Sprintf("%15d File(s) %15d bytes\n", fileCount, totalSize))
 	sb.WriteString(fmt.Sprintf("%15d Dir(s)  %15d bytes free\n", dirCount, 0))
 
-	return sb.String()
+	return sb.String(), nil
 }
 
 func formatWindowsEntry(name string, isDir bool, size int64, modTime time.Time) string {

@@ -40,6 +40,18 @@ func TestParseArgs(t *testing.T) {
 			wantPos:  nil,
 		},
 		{
+			name:     "windows style with values",
+			args:     []string{"/O:gn", "/A:d"},
+			wantOpts: map[string]string{"O": "gn", "A": "d"},
+			wantPos:  nil,
+		},
+		{
+			name:     "windows style mixed",
+			args:     []string{"/W", "/O:s", "/B"},
+			wantOpts: map[string]string{"W": "", "O": "s", "B": ""},
+			wantPos:  nil,
+		},
+		{
 			name:     "combined short flags",
 			args:     []string{"-lah"},
 			wantOpts: map[string]string{"l": "", "a": "", "h": ""},
@@ -72,6 +84,8 @@ func TestHasLinuxOption(t *testing.T) {
 		{"has linux opt", []string{"-l", "/W"}, true},
 		{"all linux", []string{"-l", "-a", "-h"}, true},
 		{"no opts", []string{"file.txt"}, false},
+		{"human-readable long flag", []string{"--human-readable"}, true},
+		{"windows values only", []string{"/O:gn", "/A:d"}, false},
 	}
 
 	for _, tt := range tests {

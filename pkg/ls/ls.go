@@ -44,16 +44,40 @@ func ParseOptions(args []string) Options {
 	// Check if using Linux mode
 	if argparse.HasLinuxOption(args) {
 		// Linux mode
-		options.Long = opts["l"] != "" || opts["long"] != ""
-		options.All = opts["a"] != "" || opts["all"] != ""
-		options.Human = opts["h"] != "" || opts["human-readable"] != ""
-		options.TimeSort = opts["t"] != "" || opts["time"] != ""
-		options.Reverse = opts["r"] != "" || opts["reverse"] != ""
-		options.OnePerLine = opts["1"] != ""
-		options.DirOnly = opts["d"] != ""
-		options.FileType = opts["F"] != "" || opts["classify"] != ""
-		options.SizeSort = opts["S"] != "" || opts["size"] != ""
-		options.Inode = opts["i"] != "" || opts["inode"] != ""
+		_, options.Long = opts["l"]
+		if _, ok := opts["long"]; ok {
+			options.Long = true
+		}
+		_, options.All = opts["a"]
+		if _, ok := opts["all"]; ok {
+			options.All = true
+		}
+		_, options.Human = opts["h"]
+		if _, ok := opts["human-readable"]; ok {
+			options.Human = true
+		}
+		_, options.TimeSort = opts["t"]
+		if _, ok := opts["time"]; ok {
+			options.TimeSort = true
+		}
+		_, options.Reverse = opts["r"]
+		if _, ok := opts["reverse"]; ok {
+			options.Reverse = true
+		}
+		_, options.OnePerLine = opts["1"]
+		_, options.DirOnly = opts["d"]
+		_, options.FileType = opts["F"]
+		if _, ok := opts["classify"]; ok {
+			options.FileType = true
+		}
+		_, options.SizeSort = opts["S"]
+		if _, ok := opts["size"]; ok {
+			options.SizeSort = true
+		}
+		_, options.Inode = opts["i"]
+		if _, ok := opts["inode"]; ok {
+			options.Inode = true
+		}
 
 		if v, ok := opts["color"]; ok {
 			options.Color = v
@@ -61,9 +85,9 @@ func ParseOptions(args []string) Options {
 	} else {
 		// Windows mode
 		options.WindowsMode = true
-		options.Wide = opts["W"] != ""
-		options.Bare = opts["B"] != ""
-		options.Recursive = opts["S"] != ""
+		_, options.Wide = opts["W"]
+		_, options.Bare = opts["B"]
+		_, options.Recursive = opts["S"]
 		options.SortBy = opts["O"]
 		options.AttrFilter = opts["A"]
 	}
@@ -82,11 +106,17 @@ func Run(args []string) error {
 
 	for _, path := range options.Paths {
 		if options.WindowsMode {
-			output := FormatWindows(path, options)
+			output, err := FormatWindows(path, options)
+			if err != nil {
+				return err
+			}
 			fmt.Print(output)
 		} else {
 			// Linux mode will be implemented in Task 7
-			output := FormatLinux(path, options)
+			output, err := FormatLinux(path, options)
+			if err != nil {
+				return err
+			}
 			fmt.Print(output)
 		}
 	}
