@@ -36,6 +36,13 @@ func TestLsIntegration(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ls -l failed: %v\n%s", err, out)
 	}
+	output := string(out)
+	if !strings.Contains(output, "integration_test.go") {
+		t.Error("ls -l output should contain the test file 'integration_test.go'")
+	}
+	if !strings.Contains(output, "total") && !strings.Contains(output, "rw") {
+		t.Error("ls -l output should contain file permissions or total line")
+	}
 }
 
 func TestGrepIntegration(t *testing.T) {
