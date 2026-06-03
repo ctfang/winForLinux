@@ -48,7 +48,8 @@ func FormatSize(size int64) string {
 
 // GetFileMode returns a Linux-style permission string (e.g. "-rw-rw-rw-").
 func GetFileMode(name string) string {
-	info, err := os.Stat(name)
+	// Use Lstat so symlinks are detected instead of being followed.
+	info, err := os.Lstat(name)
 	if err != nil {
 		return "?---------"
 	}
@@ -56,8 +57,9 @@ func GetFileMode(name string) string {
 	var b strings.Builder
 
 	// File type character
-	// Note: os.Stat follows symlinks, so ModeSymlink is never set here.
-	if info.IsDir() {
+	if info.Mode()&os.ModeSymlink != 0 {
+		b.WriteRune('l')
+	} else if info.IsDir() {
 		b.WriteRune('d')
 	} else {
 		b.WriteRune('-')
