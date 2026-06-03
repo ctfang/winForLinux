@@ -12,3 +12,6 @@ Thumbs.db
 
 # Go
 vendor/
+*.test
+*.out
+*.prof
