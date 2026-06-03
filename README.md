@@ -2,6 +2,11 @@
 
 Go 语言实现的 Windows 命令行工具集，补充缺失的 Linux 命令，增强 Windows 原生命令。
 
+## 前置要求
+
+- Go 1.22.0 或更高版本
+- PowerShell 5.1 或更高版本
+
 ## 功能
 
 ### 已实现命令
@@ -38,6 +43,8 @@ echo "hello" | grep -i "HELLO"
 grep -n "error" *.log
 ```
 
+> **注意**：`*.log` 等通配符由 shell 展开，而非 grep 命令本身。在 PowerShell 中，通配符行为可能与 bash 不同。
+
 ### cat 命令特性
 
 - 支持 `-n`（行号）、`-E`（行尾标记）、`-T`（制表符显示）、`-s`（压缩空行）
@@ -70,6 +77,8 @@ which -a python
 .\install.ps1 -AddToPath
 ```
 
+> 编译输出位于 `.\dist\` 目录。
+
 ### 卸载
 
 ```powershell
@@ -86,12 +95,15 @@ which -a python
 
 ```
 win-linux/
-├── cmd/          # 可执行文件入口
-├── pkg/          # 命令核心逻辑
-├── shared/       # 共享工具库
-├── test/         # 集成测试
-├── build.ps1     # 编译脚本
-└── install.ps1   # 安装脚本
+├── cmd/              # 可执行文件入口
+├── pkg/              # 命令核心逻辑
+├── shared/           # 共享工具库
+├── test/             # 集成测试
+├── build.ps1         # 编译脚本
+├── install.ps1       # 安装脚本
+├── uninstall.ps1     # 卸载脚本
+├── go.mod            # Go 模块定义
+└── go.work           # Go 工作空间配置
 ```
 
 ### 添加新命令
