@@ -1,3 +1,5 @@
+//go:build windows
+
 package osutil
 
 import (
@@ -15,6 +17,8 @@ func TestIsExecutable(t *testing.T) {
 		{"bat file", "test.bat", true},
 		{"cmd file", "test.cmd", true},
 		{"ps1 file", "test.ps1", true},
+		{"com file", "test.com", true},
+		{"msi file", "test.msi", true},
 		{"txt file", "test.txt", false},
 		{"go file", "test.go", false},
 	}
