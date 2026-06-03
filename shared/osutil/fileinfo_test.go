@@ -54,7 +54,7 @@ func TestFormatSize(t *testing.T) {
 }
 
 func TestGetFileMode(t *testing.T) {
-	// 创建临时文件测试
+	// Create a temporary file for testing
 	tmpFile, err := os.CreateTemp("", "test")
 	if err != nil {
 		t.Fatal(err)
@@ -66,7 +66,7 @@ func TestGetFileMode(t *testing.T) {
 	if len(mode) != 10 {
 		t.Errorf("GetFileMode() length = %d, want 10", len(mode))
 	}
-	// 应该是 -rw-rw-rw- 或类似格式
+	// Should be -rw-rw-rw- or similar format
 	if mode[0] != '-' {
 		t.Errorf("GetFileMode()[0] = %c, want '-'", mode[0])
 	}

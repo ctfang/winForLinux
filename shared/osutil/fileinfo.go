@@ -56,10 +56,9 @@ func GetFileMode(name string) string {
 	var b strings.Builder
 
 	// File type character
+	// Note: os.Stat follows symlinks, so ModeSymlink is never set here.
 	if info.IsDir() {
 		b.WriteRune('d')
-	} else if info.Mode()&os.ModeSymlink != 0 {
-		b.WriteRune('l')
 	} else {
 		b.WriteRune('-')
 	}
@@ -91,11 +90,13 @@ func GetFileMode(name string) string {
 }
 
 // GetFileOwner returns the file owner (Windows: current user).
+// The name parameter is accepted for API consistency but is not used on Windows.
 func GetFileOwner(name string) string {
 	return os.Getenv("USERNAME")
 }
 
 // GetFileGroup returns the file group (Windows: user domain).
+// The name parameter is accepted for API consistency but is not used on Windows.
 func GetFileGroup(name string) string {
 	return os.Getenv("USERDOMAIN")
 }
@@ -136,8 +137,12 @@ type byHandleFileInformation struct {
 
 // GetInode returns the file index on Windows (analogous to inode).
 func GetInode(name string) uint64 {
+	ptr, err := syscall.UTF16PtrFromString(name)
+	if err != nil {
+		return 0
+	}
 	handle, err := syscall.CreateFile(
-		syscall.StringToUTF16Ptr(name),
+		ptr,
 		0,
 		syscall.FILE_SHARE_READ|syscall.FILE_SHARE_WRITE|syscall.FILE_SHARE_DELETE,
 		nil,
