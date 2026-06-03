@@ -112,7 +112,6 @@ func Run(args []string) error {
 			}
 			fmt.Print(output)
 		} else {
-			// Linux mode will be implemented in Task 7
 			output, err := FormatLinux(path, options)
 			if err != nil {
 				return err

@@ -14,6 +14,31 @@ import (
 func FormatLinux(dir string, opts Options) (string, error) {
 	var sb strings.Builder
 
+	// -d: list directories themselves, not their contents
+	if opts.DirOnly {
+		info, err := os.Lstat(dir)
+		if err != nil {
+			return "", fmt.Errorf("ls: cannot access '%s': %w", dir, err)
+		}
+
+		if opts.Inode {
+			sb.WriteString(fmt.Sprintf("%d ", osutil.GetInode(dir)))
+		}
+
+		name := filepath.Base(dir)
+		isSymlink := info.Mode()&os.ModeSymlink != 0
+
+		if opts.Long {
+			sb.WriteString(formatLinuxLong(name, info, dir, opts))
+		} else if opts.OnePerLine {
+			sb.WriteString(colorizeName(name, info.IsDir(), isSymlink, opts) + "\n")
+		} else {
+			sb.WriteString(colorizeName(name, info.IsDir(), isSymlink, opts) + "\n")
+		}
+
+		return sb.String(), nil
+	}
+
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return "", fmt.Errorf("ls: cannot access '%s': %w", dir, err)

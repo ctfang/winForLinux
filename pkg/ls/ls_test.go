@@ -454,6 +454,192 @@ func TestLinuxNonexistentDir(t *testing.T) {
 	}
 }
 
+// TestColorizeName verifies that colorizeName returns correct output
+// for various file types and option combinations.
+func TestColorizeName(t *testing.T) {
+	tests := []struct {
+		name      string
+		fileName  string
+		isDir     bool
+		isSymlink bool
+		opts      Options
+		want      string
+	}{
+		{
+			name:     "regular file no color no classify",
+			fileName: "readme.txt",
+			opts:     Options{Color: "never"},
+			want:     "readme.txt",
+		},
+		{
+			name:     "directory no color no classify",
+			fileName: "mydir",
+			isDir:    true,
+			opts:     Options{Color: "never"},
+			want:     "mydir",
+		},
+		{
+			name:     "directory with classify",
+			fileName: "mydir",
+			isDir:    true,
+			opts:     Options{Color: "never", FileType: true},
+			want:     "mydir/",
+		},
+		{
+			name:     "executable with classify",
+			fileName: "app.exe",
+			opts:     Options{Color: "never", FileType: true},
+			want:     "app.exe*",
+		},
+		{
+			name:      "symlink with classify",
+			fileName:  "link",
+			isSymlink: true,
+			opts:      Options{Color: "never", FileType: true},
+			want:      "link@",
+		},
+		{
+			name:     "regular file with classify has no suffix",
+			fileName: "data.txt",
+			opts:     Options{Color: "never", FileType: true},
+			want:     "data.txt",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := colorizeName(tt.fileName, tt.isDir, tt.isSymlink, tt.opts)
+			if got != tt.want {
+				t.Errorf("colorizeName(%q, dir=%v, symlink=%v) = %q, want %q",
+					tt.fileName, tt.isDir, tt.isSymlink, got, tt.want)
+			}
+		})
+	}
+}
+
+// TestColorizeNameColorMode verifies that colorizeName returns ANSI-colored
+// output when color is forced on.
+func TestColorizeNameColorMode(t *testing.T) {
+	opts := Options{Color: "always"}
+
+	// Directory should be colored (contains ANSI escape sequences).
+	result := colorizeName("mydir", true, false, opts)
+	if !strings.Contains(result, "mydir") {
+		t.Errorf("colored output should contain the filename, got %q", result)
+	}
+
+	// Regular file with archive extension.
+	result = colorizeName("archive.zip", false, false, opts)
+	if !strings.Contains(result, "archive.zip") {
+		t.Errorf("colored output should contain the filename, got %q", result)
+	}
+
+	// Symlink.
+	result = colorizeName("link", false, true, opts)
+	if !strings.Contains(result, "link") {
+		t.Errorf("colored output should contain the filename, got %q", result)
+	}
+
+	// Image extension.
+	result = colorizeName("photo.jpg", false, false, opts)
+	if !strings.Contains(result, "photo.jpg") {
+		t.Errorf("colored output should contain the filename, got %q", result)
+	}
+
+	// Color mode with FileType: suffix should be appended.
+	result = colorizeName("mydir", true, false, Options{Color: "always", FileType: true})
+	if !strings.Contains(result, "/") {
+		t.Errorf("colored classify output for dir should contain '/', got %q", result)
+	}
+}
+
+// TestTypeIndicator verifies the typeIndicator helper function.
+func TestTypeIndicator(t *testing.T) {
+	tests := []struct {
+		name      string
+		fileName  string
+		isDir     bool
+		isSymlink bool
+		want      string
+	}{
+		{name: "directory", fileName: "dir", isDir: true, want: "/"},
+		{name: "executable", fileName: "app.exe", want: "*"},
+		{name: "symlink", fileName: "link", isSymlink: true, want: "@"},
+		{name: "regular file", fileName: "readme.txt", want: ""},
+		{name: "directory takes priority", fileName: "dir.exe", isDir: true, want: "/"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := typeIndicator(tt.fileName, tt.isDir, tt.isSymlink)
+			if got != tt.want {
+				t.Errorf("typeIndicator(%q, dir=%v, symlink=%v) = %q, want %q",
+					tt.fileName, tt.isDir, tt.isSymlink, got, tt.want)
+			}
+		})
+	}
+}
+
+// TestLinuxDirOnly verifies that -d flag lists the directory itself
+// rather than its contents.
+func TestLinuxDirOnly(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "ls-test-dironly")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	os.WriteFile(filepath.Join(tmpDir, "file.txt"), []byte("content"), 0644)
+	os.Mkdir(filepath.Join(tmpDir, "subdir"), 0755)
+
+	output, err := FormatLinux(tmpDir, Options{DirOnly: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	dirName := filepath.Base(tmpDir)
+	if !strings.Contains(output, dirName) {
+		t.Errorf("-d output should contain the directory name %q, got %q", dirName, output)
+	}
+
+	// -d should NOT list the contents of the directory.
+	if strings.Contains(output, "file.txt") {
+		t.Errorf("-d output should not list directory contents, got %q", output)
+	}
+	if strings.Contains(output, "subdir") {
+		t.Errorf("-d output should not list directory contents, got %q", output)
+	}
+}
+
+// TestLinuxDirOnlyLongFormat verifies that -d -l shows long format for
+// the directory entry itself.
+func TestLinuxDirOnlyLongFormat(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "ls-test-dironly-long")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	output, err := FormatLinux(tmpDir, Options{DirOnly: true, Long: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	dirName := filepath.Base(tmpDir)
+	if !strings.Contains(output, dirName) {
+		t.Errorf("-d -l output should contain the directory name %q, got %q", dirName, output)
+	}
+
+	// Long format should have permission string starting with 'd'.
+	lines := strings.Split(strings.TrimRight(output, "\n"), "\n")
+	if len(lines) < 1 {
+		t.Fatalf("expected at least 1 line, got output: %q", output)
+	}
+	if !strings.HasPrefix(lines[0], "d") {
+		t.Errorf("long format -d output should start with 'd', got: %q", lines[0])
+	}
+}
+
 // TestSortEntriesErrorHandling verifies that sortEntries does not panic
 // when entries have errors (e.g., deleted between readdir and stat).
 func TestSortEntriesErrorHandling(t *testing.T) {
