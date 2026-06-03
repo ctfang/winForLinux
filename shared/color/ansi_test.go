@@ -24,3 +24,24 @@ func TestColorize(t *testing.T) {
 		})
 	}
 }
+
+func TestBoldText(t *testing.T) {
+	tests := []struct {
+		name     string
+		text     string
+		expected string
+	}{
+		{"simple text", "hello", "\033[1mhello\033[0m"},
+		{"filename", "file.exe", "\033[1mfile.exe\033[0m"},
+		{"empty string", "", "\033[1m\033[0m"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := BoldText(tt.text)
+			if result != tt.expected {
+				t.Errorf("BoldText(%q) = %q, want %q", tt.text, result, tt.expected)
+			}
+		})
+	}
+}
