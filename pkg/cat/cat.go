@@ -22,7 +22,6 @@ func Cat(reader io.Reader, opts Options, writer io.Writer) error {
 	prevBlank := false
 
 	for scanner.Scan() {
-		lineNum++
 		line := scanner.Text()
 
 		// Squeeze blank lines
@@ -33,6 +32,8 @@ func Cat(reader io.Reader, opts Options, writer io.Writer) error {
 			}
 			prevBlank = isBlank
 		}
+
+		lineNum++
 
 		// Line numbers
 		if opts.Number {

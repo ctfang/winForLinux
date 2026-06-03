@@ -37,15 +37,21 @@ func main() {
 	// Read from files or stdin
 	if len(files) > 0 {
 		for _, filename := range files {
-			file, err := os.Open(filename)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "cat: %s: %v\n", filename, err)
-				continue
-			}
-			defer file.Close()
-			cat.Cat(file, opts, os.Stdout)
+			func() {
+				file, err := os.Open(filename)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "cat: %s: %v\n", filename, err)
+					return
+				}
+				defer file.Close()
+				if err := cat.Cat(file, opts, os.Stdout); err != nil {
+					fmt.Fprintf(os.Stderr, "cat: %s: %v\n", filename, err)
+				}
+			}()
 		}
 	} else {
-		cat.Cat(os.Stdin, opts, os.Stdout)
+		if err := cat.Cat(os.Stdin, opts, os.Stdout); err != nil {
+			fmt.Fprintf(os.Stderr, "cat: %v\n", err)
+		}
 	}
 }
