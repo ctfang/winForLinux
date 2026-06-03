@@ -10,7 +10,7 @@ import (
 var version = "dev"
 
 func main() {
-	if len(os.Args) > 1 && (os.Args[1] == "--version" || os.Args[1] == "-v") {
+	if len(os.Args) > 1 && os.Args[1] == "--version" {
 		fmt.Println("win-tools grep", version)
 		os.Exit(0)
 	}
