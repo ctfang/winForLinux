@@ -1,4 +1,4 @@
-package ls
+﻿package ls
 
 import (
 	"fmt"
@@ -12,6 +12,10 @@ import (
 
 // FormatLinux generates Linux ls style output
 func FormatLinux(dir string, opts Options) (string, error) {
+	return formatLinuxDir(dir, opts, true)
+}
+
+func formatLinuxDir(dir string, opts Options, topLevel bool) (string, error) {
 	var sb strings.Builder
 
 	// -d: list directories themselves, not their contents
@@ -30,8 +34,6 @@ func FormatLinux(dir string, opts Options) (string, error) {
 
 		if opts.Long {
 			sb.WriteString(formatLinuxLong(name, info, dir, opts))
-		} else if opts.OnePerLine {
-			sb.WriteString(colorizeName(name, info.IsDir(), isSymlink, opts) + "\n")
 		} else {
 			sb.WriteString(colorizeName(name, info.IsDir(), isSymlink, opts) + "\n")
 		}
@@ -56,12 +58,16 @@ func FormatLinux(dir string, opts Options) (string, error) {
 	// Sort entries
 	sortedEntries := sortEntries(filtered, dir, opts)
 
+	// For recursive listings of multiple levels, print directory header
+	if opts.Recursive && !topLevel {
+		sb.WriteString("\n" + dir + ":\n")
+	} else if opts.Recursive && topLevel {
+		sb.WriteString(dir + ":\n")
+	}
+
 	// Output
 	for _, entry := range sortedEntries {
 		fullPath := filepath.Join(dir, entry.Name())
-		// Use Lstat instead of entry.Info() so symlinks are not followed.
-		// entry.Info() calls os.Stat which follows symlinks, so ModeSymlink
-		// would never be set.
 		info, err := os.Lstat(fullPath)
 		if err != nil {
 			continue
@@ -86,6 +92,31 @@ func FormatLinux(dir string, opts Options) (string, error) {
 		sb.WriteString("\n")
 	}
 
+	// Recurse into subdirectories (-R)
+	if opts.Recursive {
+		for _, entry := range sortedEntries {
+			name := entry.Name()
+			if name == "." || name == ".." {
+				continue
+			}
+			fullPath := filepath.Join(dir, name)
+			info, err := os.Lstat(fullPath)
+			if err != nil || !info.IsDir() {
+				continue
+			}
+			// Skip symlinked dirs to avoid cycles
+			if info.Mode()&os.ModeSymlink != 0 {
+				continue
+			}
+			sub, err := formatLinuxDir(fullPath, opts, false)
+			if err != nil {
+				sb.WriteString(fmt.Sprintf("ls: cannot access '%s': %v\n", fullPath, err))
+				continue
+			}
+			sb.WriteString(sub)
+		}
+	}
+
 	return sb.String(), nil
 }
 
@@ -97,8 +128,6 @@ func sortEntries(entries []os.DirEntry, dir string, opts Options) []os.DirEntry 
 		if opts.TimeSort {
 			infoI, errI := sorted[i].Info()
 			infoJ, errJ := sorted[j].Info()
-			// If either entry has an error, fall back to name comparison
-			// to avoid nil pointer panics.
 			if errI != nil || errJ != nil {
 				if opts.Reverse {
 					return sorted[i].Name() > sorted[j].Name()
@@ -124,7 +153,6 @@ func sortEntries(entries []os.DirEntry, dir string, opts Options) []os.DirEntry 
 			}
 			return infoI.Size() > infoJ.Size()
 		}
-		// Default: sort by name
 		if opts.Reverse {
 			return sorted[i].Name() > sorted[j].Name()
 		}
@@ -137,32 +165,20 @@ func sortEntries(entries []os.DirEntry, dir string, opts Options) []os.DirEntry 
 func formatLinuxLong(name string, info os.FileInfo, fullPath string, opts Options) string {
 	var sb strings.Builder
 
-	// Permissions
 	mode := osutil.GetFileMode(fullPath)
 	sb.WriteString(mode + " ")
-
-	// Links
 	sb.WriteString("1 ")
-
-	// Owner
 	sb.WriteString(osutil.GetFileOwner(fullPath) + " ")
-
-	// Group
 	sb.WriteString(osutil.GetFileGroup(fullPath) + " ")
 
-	// Size
 	if opts.Human {
 		sb.WriteString(fmt.Sprintf("%6s ", osutil.FormatSize(info.Size())))
 	} else {
 		sb.WriteString(fmt.Sprintf("%6d ", info.Size()))
 	}
 
-	// Mod time
 	sb.WriteString(info.ModTime().Format("Jan  2 15:04") + " ")
-
-	// Name (with color)
 	sb.WriteString(colorizeName(name, info.IsDir(), info.Mode()&os.ModeSymlink != 0, opts))
-
 	sb.WriteString("\n")
 
 	return sb.String()

@@ -1,4 +1,4 @@
-package ls
+﻿package ls
 
 import (
 	"fmt"
@@ -15,7 +15,7 @@ type Options struct {
 	WindowsMode bool
 	Wide        bool   // /W
 	Bare        bool   // /B
-	Recursive   bool   // /S
+	Recursive   bool   // /S or -R
 	SortBy      string // /O
 	AttrFilter  string // /A
 
@@ -63,6 +63,10 @@ func ParseOptions(args []string) Options {
 		_, options.Reverse = opts["r"]
 		if _, ok := opts["reverse"]; ok {
 			options.Reverse = true
+		}
+		_, options.Recursive = opts["R"]
+		if _, ok := opts["recursive"]; ok {
+			options.Recursive = true
 		}
 		_, options.OnePerLine = opts["1"]
 		_, options.DirOnly = opts["d"]

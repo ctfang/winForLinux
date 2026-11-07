@@ -32,7 +32,6 @@ if ($Restore) {
         }
     }
 
-    # Remove install directory
     Remove-Item -Recurse -Force $InstallDir -ErrorAction SilentlyContinue
     Write-Host "Restore complete!" -ForegroundColor Green
     exit 0
@@ -46,43 +45,53 @@ if (-not (Test-Path ".\dist")) {
 
 Write-Host "Installing win-tools..." -ForegroundColor Cyan
 
-# Create directories
 New-Item -ItemType Directory -Force $InstallDir | Out-Null
 New-Item -ItemType Directory -Force $BackupDir | Out-Null
 
-# Backup existing commands
 $commands = Get-ChildItem ".\dist\*.exe" | ForEach-Object { $_.BaseName }
 
 foreach ($cmd in $commands) {
-    $existing = Get-Command $cmd -ErrorAction SilentlyContinue
-    if ($existing) {
+    # Only consider Application commands with a real file Source (skip aliases/functions)
+    $existing = Get-Command $cmd -CommandType Application -ErrorAction SilentlyContinue |
+        Where-Object { $_.Source -and (Test-Path $_.Source) } |
+        Select-Object -First 1
+
+    if ($existing -and $existing.Source -notlike "$InstallDir*") {
         $backupPath = Join-Path $BackupDir $cmd
         New-Item -ItemType Directory -Force $backupPath | Out-Null
 
-        # Backup original file
         Copy-Item $existing.Source "$backupPath\$cmd.exe.original" -Force
 
-        # Save metadata
         @{
             OriginalPath = $existing.Source
-            BackupDate = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-            ToolVersion = (Get-Item $existing.Source).VersionInfo.FileVersion
+            BackupDate   = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+            ToolVersion  = (Get-Item $existing.Source).VersionInfo.FileVersion
         } | ConvertTo-Json | Set-Content "$backupPath\metadata.json"
 
         Write-Host "Backed up: $($existing.Source)" -ForegroundColor Yellow
     }
 }
 
-# Install new commands
-Copy-Item ".\dist\*.exe" $InstallDir -Force:$Force
+Copy-Item ".\dist\*.exe" $InstallDir -Force
 
-# Add to PATH
+# Ensure PATH: put InstallDir first for current session and user env
+$env:Path = $InstallDir + [IO.Path]::PathSeparator + ($env:Path -replace [regex]::Escape($InstallDir + [IO.Path]::PathSeparator), '')
+
 if ($AddToPath) {
     $currentPath = [Environment]::GetEnvironmentVariable("Path", "User")
-    if ($currentPath -notlike "*$InstallDir*") {
-        [Environment]::SetEnvironmentVariable("Path", "$currentPath;$InstallDir", "User")
-        Write-Host "Added to PATH: $InstallDir" -ForegroundColor Green
-        Write-Host "Restart your terminal to apply changes." -ForegroundColor Yellow
+    if (-not $currentPath) { $currentPath = "" }
+    $parts = $currentPath -split ';' | Where-Object { $_ -and $_ -ne $InstallDir }
+    $newPath = (@($InstallDir) + $parts) -join ';'
+    [Environment]::SetEnvironmentVariable("Path", $newPath, "User")
+    Write-Host "Added/refreshed PATH: $InstallDir" -ForegroundColor Green
+}
+
+# Remove PowerShell aliases that shadow common tools
+$aliasesToRemove = @("ls", "cat", "cp", "mv", "rm", "mkdir", "sort", "echo")
+foreach ($a in $aliasesToRemove) {
+    if (Get-Alias $a -ErrorAction SilentlyContinue) {
+        Remove-Item "Alias:$a" -Force -ErrorAction SilentlyContinue
+        Write-Host "Removed PowerShell alias: $a" -ForegroundColor Gray
     }
 }
 

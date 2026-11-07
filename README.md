@@ -1,128 +1,116 @@
-# Win-Tools
+# winForLinux (win-tools)
 
-Go 语言实现的 Windows 命令行工具集，补充缺失的 Linux 命令，增强 Windows 原生命令。
+在 Windows 上提供常用 Linux 命令的独立可执行文件（Go 实现），可直接在 PowerShell / cmd 中使用，无需 WSL。
 
 ## 前置要求
 
-- Go 1.22.0 或更高版本
-- PowerShell 5.1 或更高版本
+- Go 1.22+（仅从源码编译时需要）
+- PowerShell 5.1+
 
-## 功能
+## 已实现命令
 
-### 已实现命令
-
-| 命令 | 说明 | 状态 |
-|------|------|------|
-| `ls` | 目录列表（Windows/Linux 双模式） | ✅ |
-| `grep` | 文本搜索 | ✅ |
-| `cat` | 文件输出 | ✅ |
-| `which` | 查找可执行文件 | ✅ |
-
-### ls 命令特性
-
-- **Windows 模式**（默认）：兼容 Windows dir 命令
-- **Linux 模式**：支持 `-l`, `-a`, `-h`, `-t`, `-R` 等选项
-- **自动切换**：使用 Linux 选项时自动切换到 Linux 模式
-
-```bash
-ls          # Windows dir 风格
-ls -l       # Linux 长格式
-ls -lah     # Linux 风格，显示所有文件、人类可读大小
-ls /W       # Windows 宽列表
-```
-
-### grep 命令特性
-
-- 支持正则表达式
-- 支持 `-i`（忽略大小写）、`-n`（行号）、`-c`（计数）等选项
-- 支持从文件或 stdin 读取
-
-```bash
-grep "pattern" file.txt
-echo "hello" | grep -i "HELLO"
-grep -n "error" *.log
-```
-
-> **注意**：`*.log` 等通配符由 shell 展开，而非 grep 命令本身。在 PowerShell 中，通配符行为可能与 bash 不同。
-
-### cat 命令特性
-
-- 支持 `-n`（行号）、`-E`（行尾标记）、`-T`（制表符显示）、`-s`（压缩空行）
-
-```bash
-cat file.txt
-cat -n file.txt
-cat -E file.txt
-```
-
-### which 命令特性
-
-- 在 PATH 中查找可执行文件
-- 支持 `-a` 显示所有匹配
-
-```bash
-which go
-which -a python
-```
+| 命令 | 说明 |
+|------|------|
+| `ls` | 目录列表（默认 Windows dir 风格；遇 `-l/-a/-h/-R` 等切到 Linux 风格） |
+| `grep` | 文本搜索（支持合并短选项如 `-in`，以及 `-r` 递归） |
+| `cat` | 文件输出 |
+| `which` | 在 PATH 中查找可执行文件 |
+| `head` / `tail` | 文件头 / 尾（`tail -f` 跟踪） |
+| `wc` | 行/词/字节统计 |
+| `touch` | 创建文件或更新时间戳 |
+| `sort` / `uniq` | 排序 / 去重 |
+| `basename` / `dirname` | 路径拆分 |
+| `cp` / `mv` / `rm` / `mkdir` | 常用文件操作（`cp -r`、`rm -rf`、`mkdir -p`） |
+| `wfl` | Linux 风格命令组合器（`\|` `&&` `\|\|` `;` `&`） |
 
 ## 安装
 
-### 从源码构建
-
 ```powershell
-# 编译所有命令
 .\build.ps1
-
-# 安装到系统
-.\install.ps1 -AddToPath
+.\install.ps1 -AddToPath -Force
 ```
 
-> 编译输出位于 `.\dist\` 目录。
+安装目录：`%LOCALAPPDATA%\win-tools`
 
-### 卸载
+安装脚本会：
+1. 把所有 `.exe` 拷到安装目录并加入用户 PATH
+2. 备份可能被覆盖的系统同名程序
+3. 在当前会话移除会遮挡的 PowerShell 别名（`ls`/`cat`/`cp`/`mv`/`rm`/`mkdir`/`sort`）
+
+请**新开一个 PowerShell 窗口**后再用。配置文件也会在启动时自动去掉这些别名，并优先使用 win-tools。
+
+卸载 / 恢复：
 
 ```powershell
-# 卸载（保留备份）
 .\uninstall.ps1
-
-# 恢复原始命令
-.\uninstall.ps1 -Restore
+# 或
+.\install.ps1 -Restore
 ```
+
+## 用法示例
+
+```powershell
+ls -lah
+ls -R docs
+grep -in "error" *.log
+grep -r "TODO" .
+cat -n README.md
+head -n 5 README.md
+tail -n 3 README.md
+wc -l README.md
+touch newfile.txt
+mkdir -p a\b\c
+cp -r docs docs_backup
+sort file.txt | uniq
+```
+
+### 管道与命令组合
+
+**在 PowerShell 里**，原生 `|` 已经可以连接这些 `.exe`：
+
+```powershell
+cat README.md | grep -i win
+Get-Content README.md | wc -l
+```
+
+PowerShell 对 `&` / `&&` / `||` 的语义与 Linux 不完全相同。需要 Linux 风格组合时，用 **`wfl`**：
+
+```powershell
+wfl -c "echo hello | grep hello"
+wfl -c "false || echo fallback"
+wfl -c "true && echo ok"
+wfl -c "echo bg & echo fg"
+wfl -c "ls -la ; echo done"
+```
+
+`wfl` 会优先调用与自己同目录的 win-tools 命令。
 
 ## 开发
 
-### 项目结构
-
 ```
-win-linux/
-├── cmd/              # 可执行文件入口
-├── pkg/              # 命令核心逻辑
-├── shared/           # 共享工具库
-├── test/             # 集成测试
-├── build.ps1         # 编译脚本
-├── install.ps1       # 安装脚本
-├── uninstall.ps1     # 卸载脚本
-├── go.mod            # Go 模块定义
-└── go.work           # Go 工作空间配置
+winForLinux/
+├── cmd/          # 各命令入口
+├── pkg/          # 命令核心逻辑
+├── shared/       # argparse / color / osutil
+├── test/         # 集成测试
+├── build.ps1
+├── install.ps1
+└── uninstall.ps1
 ```
 
-### 添加新命令
+添加新命令：在 `pkg/` 与 `cmd/` 各加一处，更新 `build.ps1` 的命令列表。
 
-1. 在 `pkg/` 创建命令包
-2. 在 `cmd/` 创建入口
-3. 更新 `build.ps1` 的命令列表
-4. 添加测试
-
-### 运行测试
-
-```bash
-# 单元测试
-go test ./...
-
-# 集成测试（需要先编译）
+```powershell
+go test ./pkg/... ./shared/...
 .\build.ps1
 go test ./test/ -v
 ```
+
+## 设计说明
+
+- 每个命令编译为独立 `.exe`，放入 PATH 即可用（方案与设计文档一致）
+- 管道在宿主 shell（PowerShell）中天然可用；`&&` / `||` / `&` / `;` 由 `wfl` 提供
+- 不追求完整 GNU 兼容，覆盖常用基础场景
 
 ## 许可证
 

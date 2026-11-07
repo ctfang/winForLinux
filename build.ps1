@@ -1,7 +1,7 @@
-# build.ps1
+﻿# build.ps1
 param(
     [string]$OutputDir = ".\dist",
-    [string]$Version = "1.0.0",
+    [string]$Version = "1.1.0",
     [switch]$Clean
 )
 
@@ -14,7 +14,13 @@ if ($Clean) {
 
 New-Item -ItemType Directory -Force $OutputDir | Out-Null
 
-$commands = @("ls", "grep", "cat", "which")
+$commands = @(
+    "ls", "grep", "cat", "which",
+    "head", "tail", "wc", "touch", "sort", "uniq",
+    "basename", "dirname",
+    "cp", "mv", "rm", "mkdir",
+    "wfl"
+)
 
 foreach ($cmd in $commands) {
     Write-Host "Building $cmd..." -ForegroundColor Cyan
