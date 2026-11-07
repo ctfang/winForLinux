@@ -1,8 +1,9 @@
-﻿package wc
+package wc
 
 import (
 	"bufio"
 	"fmt"
+	"github.com/user/win-tools/shared/bom"
 	"io"
 	"strings"
 	"unicode/utf8"
@@ -27,7 +28,7 @@ type Result struct {
 // Count counts lines/words/bytes/chars from reader.
 func Count(reader io.Reader) (Result, error) {
 	var r Result
-	scanner := bufio.NewScanner(reader)
+	scanner := bufio.NewScanner(bom.Reader(reader))
 	buf := make([]byte, 0, 64*1024)
 	scanner.Buffer(buf, 10*1024*1024)
 	for scanner.Scan() {
@@ -47,6 +48,9 @@ func Count(reader io.Reader) (Result, error) {
 
 // CountBytes counts from raw bytes (more accurate for -c).
 func CountBytes(data []byte) Result {
+	if len(data) >= 3 && data[0] == 0xEF && data[1] == 0xBB && data[2] == 0xBF {
+		data = data[3:]
+	}
 	var r Result
 	r.Bytes = len(data)
 	r.Chars = utf8.RuneCount(data)

@@ -1,8 +1,9 @@
-﻿package head
+package head
 
 import (
 	"bufio"
 	"fmt"
+	"github.com/user/win-tools/shared/bom"
 	"io"
 )
 
@@ -20,7 +21,7 @@ func Head(reader io.Reader, opts Options, writer io.Writer) error {
 
 	if opts.Bytes > 0 {
 		buf := make([]byte, opts.Bytes)
-		n, err := io.ReadFull(reader, buf)
+		n, err := io.ReadFull(bom.Reader(reader), buf)
 		if err != nil && err != io.EOF && err != io.ErrUnexpectedEOF {
 			return err
 		}
@@ -28,7 +29,7 @@ func Head(reader io.Reader, opts Options, writer io.Writer) error {
 		return werr
 	}
 
-	scanner := bufio.NewScanner(reader)
+	scanner := bufio.NewScanner(bom.Reader(reader))
 	buf := make([]byte, 0, 64*1024)
 	scanner.Buffer(buf, 10*1024*1024)
 	count := 0

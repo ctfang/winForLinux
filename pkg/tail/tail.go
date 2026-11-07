@@ -1,8 +1,9 @@
-﻿package tail
+package tail
 
 import (
 	"bufio"
 	"fmt"
+	"github.com/user/win-tools/shared/bom"
 	"io"
 	"os"
 	"time"
@@ -10,7 +11,7 @@ import (
 
 // Options for tail
 type Options struct {
-	Lines int  // -n, default 10
+	Lines  int  // -n, default 10
 	Follow bool // -f
 }
 
@@ -20,7 +21,7 @@ func Tail(reader io.Reader, opts Options, writer io.Writer) error {
 		opts.Lines = 10
 	}
 
-	scanner := bufio.NewScanner(reader)
+	scanner := bufio.NewScanner(bom.Reader(reader))
 	buf := make([]byte, 0, 64*1024)
 	scanner.Buffer(buf, 10*1024*1024)
 

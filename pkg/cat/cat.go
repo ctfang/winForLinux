@@ -3,6 +3,7 @@ package cat
 import (
 	"bufio"
 	"fmt"
+	"github.com/user/win-tools/shared/bom"
 	"io"
 	"strings"
 )
@@ -17,7 +18,7 @@ type Options struct {
 
 // Cat reads from reader and outputs to writer
 func Cat(reader io.Reader, opts Options, writer io.Writer) error {
-	scanner := bufio.NewScanner(reader)
+	scanner := bufio.NewScanner(bom.Reader(reader))
 	lineNum := 0
 	prevBlank := false
 

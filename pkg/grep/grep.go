@@ -1,8 +1,9 @@
-﻿package grep
+package grep
 
 import (
 	"bufio"
 	"fmt"
+	"github.com/user/win-tools/shared/bom"
 	"io"
 	"os"
 	"path/filepath"
@@ -38,7 +39,7 @@ func GrepNamed(reader io.Reader, name string, pattern string, opts Options, writ
 		return false, err
 	}
 
-	scanner := bufio.NewScanner(reader)
+	scanner := bufio.NewScanner(bom.Reader(reader))
 	// Allow long lines
 	buf := make([]byte, 0, 64*1024)
 	scanner.Buffer(buf, 10*1024*1024)

@@ -1,8 +1,9 @@
-﻿package sortcmd
+package sortcmd
 
 import (
 	"bufio"
 	"fmt"
+	"github.com/user/win-tools/shared/bom"
 	"io"
 	"sort"
 	"strconv"
@@ -19,7 +20,7 @@ type Options struct {
 
 // SortLines sorts lines from reader and writes to writer.
 func SortLines(reader io.Reader, opts Options, writer io.Writer) error {
-	scanner := bufio.NewScanner(reader)
+	scanner := bufio.NewScanner(bom.Reader(reader))
 	buf := make([]byte, 0, 64*1024)
 	scanner.Buffer(buf, 10*1024*1024)
 	var lines []string

@@ -3,6 +3,7 @@ package diff
 import (
 	"bufio"
 	"fmt"
+	"github.com/user/win-tools/shared/bom"
 	"io"
 	"os"
 )
@@ -45,7 +46,7 @@ func readLines(path string) ([]string, error) {
 	}
 	defer f.Close()
 	var lines []string
-	sc := bufio.NewScanner(f)
+	sc := bufio.NewScanner(bom.Reader(f))
 	buf := make([]byte, 0, 64*1024)
 	sc.Buffer(buf, 10*1024*1024)
 	for sc.Scan() {
@@ -174,10 +175,9 @@ func DiffReaders(a, b io.Reader, opts Options, w io.Writer, aName, bName string)
 
 func readAllLines(r io.Reader) ([]string, error) {
 	var lines []string
-	sc := bufio.NewScanner(r)
+	sc := bufio.NewScanner(bom.Reader(r))
 	for sc.Scan() {
 		lines = append(lines, sc.Text())
 	}
 	return lines, sc.Err()
 }
-
