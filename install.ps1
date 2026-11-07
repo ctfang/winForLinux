@@ -22,7 +22,7 @@ if (Test-Path $winToolsDir) {
     }
     $env:Path = $parts -join [IO.Path]::PathSeparator
 }
-foreach ($a in @('ls','cat','cp','mv','rm','mkdir','sort','md','echo','pwd','clear','diff','tee')) {
+foreach ($a in @('ls','cat','cp','mv','rm','mkdir','sort','md','echo','pwd','clear','diff','tee','ps','kill')) {
     if (Get-Alias $a -ErrorAction SilentlyContinue) {
         Remove-Item "Alias:$a" -Force -ErrorAction SilentlyContinue
     }
@@ -160,7 +160,7 @@ if ($AddToPath) {
 }
 
 # Remove PowerShell aliases that shadow common tools
-$aliasesToRemove = @("ls", "cat", "cp", "mv", "rm", "mkdir", "sort", "echo", "pwd", "clear", "diff", "tee")
+$aliasesToRemove = @("ls", "cat", "cp", "mv", "rm", "mkdir", "sort", "echo", "pwd", "clear", "diff", "tee", "ps", "kill")
 foreach ($a in $aliasesToRemove) {
     if (Get-Alias $a -ErrorAction SilentlyContinue) {
         Remove-Item "Alias:$a" -Force -ErrorAction SilentlyContinue

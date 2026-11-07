@@ -27,7 +27,14 @@
 | `diff` | 文件差异（`-u` unified，`-q` brief） |
 | `du` / `df` | 目录占用 / 磁盘空间（`-h`，`du -s/-d`） |
 | `xargs` | 参数传递（`-n/-I/-0/-d/-r`；PowerShell 下 `{}` 请加引号） |
-| `wfl` | Linux 风格命令组合器（`\|` `&&` `\|\|` `;` `&`） |
+| `ps` | 进程列表（`-e/-A`，`-f`，`-p PID`） |
+| `kill` | 按 PID 结束进程（`-9`） |
+| `killall` | 按进程名结束（`-9`，`-v`，`-q`） |
+| `netstat` | 端口/连接（`-tulnap`，可跟 `PORT` / `:PORT`） |
+| `ss` | 套接字统计（`-tulnap`，可跟端口过滤） |
+| `lsof` | 端口占用子集（`-i [TCP|UDP][:PORT]`，`-sTCP:LISTEN`） |
+| `wfl` | Linux 风格命令组合器（`|` `&&` `||` `;` `&`） |
+
 
 ## 安装
 
@@ -41,7 +48,7 @@
 安装脚本会：
 1. 把所有 `.exe` 拷到安装目录并加入用户 PATH
 2. 备份可能被覆盖的系统同名程序（如 Windows `find.exe`）
-3. 在当前会话移除会遮挡的 PowerShell 别名（`ls`/`cat`/`cp`/`mv`/`rm`/`mkdir`/`sort`/`echo`/`pwd`/`clear`/`diff`/`tee` 等）
+3. 在当前会话移除会遮挡的 PowerShell 别名（`ls`/`cat`/`cp`/`mv`/`rm`/`mkdir`/`sort`/`echo`/`pwd`/`clear`/`diff`/`tee`/`ps`/`kill` 等）
 4. 更新 PowerShell profile：优先 win-tools，并启用 **UTF-8**（见下）
 
 请**新开一个 PowerShell 窗口**后再用。
@@ -99,6 +106,19 @@ echo one two three | xargs -n 1 echo
 "a`nb" | xargs -I '{}' echo 'got-{}'
 ```
 
+
+```powershell
+ps -ef
+ps -p 1234
+kill -9 1234
+killall -9 notepad
+netstat -tulnp
+netstat -tlnp 3000
+ss -tlnp
+ss -lntp 22
+lsof -i :3000
+lsof -iTCP -sTCP:LISTEN
+```
 ### 管道与命令组合
 
 **在 PowerShell 里**，原生 `|` 已经可以连接这些 `.exe`（需 UTF-8 profile，见上）：
@@ -143,4 +163,4 @@ winForLinux/
 .\install.ps1 -AddToPath -Force
 ```
 
-当前版本：1.2.0
+当前版本：1.3.0
