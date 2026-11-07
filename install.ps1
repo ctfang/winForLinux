@@ -9,6 +9,72 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+function Get-WinForLinuxProfileBlock {
+    return @'
+
+# BEGIN winForLinux / win-tools
+# Prefer win-tools binaries over PowerShell aliases/functions
+$winToolsDir = Join-Path $env:LOCALAPPDATA 'win-tools'
+if (Test-Path $winToolsDir) {
+    $parts = @($winToolsDir)
+    foreach ($p in ($env:Path -split [IO.Path]::PathSeparator)) {
+        if ($p -and $p -ne $winToolsDir) { $parts += $p }
+    }
+    $env:Path = $parts -join [IO.Path]::PathSeparator
+}
+foreach ($a in @('ls','cat','cp','mv','rm','mkdir','sort','md')) {
+    if (Get-Alias $a -ErrorAction SilentlyContinue) {
+        Remove-Item "Alias:$a" -Force -ErrorAction SilentlyContinue
+    }
+}
+# mkdir is a function in Windows PowerShell; remove so mkdir.exe is used
+if (Test-Path Function:mkdir) {
+    Remove-Item Function:mkdir -Force -ErrorAction SilentlyContinue
+}
+# UTF-8 for console + native exe pipes (PS 5.1 defaults $OutputEncoding to ASCII,
+# which turns non-ASCII into '?' in pipes like: cat README.md | grep -i win).
+# Idempotent; skip chcp when stdout is redirected; never fail profile load.
+if ($Host.Name -eq 'ConsoleHost') {
+    try {
+        $utf8 = New-Object System.Text.UTF8Encoding $false
+        [Console]::OutputEncoding = $utf8
+        [Console]::InputEncoding  = $utf8
+        $global:OutputEncoding    = $utf8
+        if (-not [Console]::IsOutputRedirected) {
+            chcp 65001 > $null
+        }
+    } catch { }
+}
+# END winForLinux / win-tools
+'@
+}
+
+function Update-WinForLinuxProfile {
+    $profilePath = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'WindowsPowerShell\Microsoft.PowerShell_profile.ps1'
+    $profileDir = Split-Path $profilePath -Parent
+    if (-not (Test-Path $profileDir)) {
+        New-Item -ItemType Directory -Force $profileDir | Out-Null
+    }
+
+    $block = Get-WinForLinuxProfileBlock
+    $existing = ''
+    if (Test-Path $profilePath) {
+        $existing = Get-Content $profilePath -Raw -ErrorAction SilentlyContinue
+        if ($null -eq $existing) { $existing = '' }
+    }
+
+    $begin = '# BEGIN winForLinux / win-tools'
+    if ($existing -match [regex]::Escape($begin)) {
+        $pattern = '(?s)# BEGIN winForLinux / win-tools.*?# END winForLinux / win-tools\r?\n?'
+        $updated = [regex]::Replace($existing, $pattern, $block.TrimStart() + "`r`n")
+        Set-Content -Path $profilePath -Value $updated.TrimEnd() -Encoding UTF8
+    } else {
+        $sep = if ($existing.Trim().Length -gt 0) { "`r`n`r`n" } else { '' }
+        Set-Content -Path $profilePath -Value ($existing.TrimEnd() + $sep + $block.TrimStart()) -Encoding UTF8
+    }
+    Write-Host "Updated PowerShell profile: $profilePath" -ForegroundColor Green
+}
+
 # Restore mode
 if ($Restore) {
     if (-not (Test-Path $BackupDir)) {
@@ -95,7 +161,16 @@ foreach ($a in $aliasesToRemove) {
     }
 }
 
-Write-Host "`nInstallation complete!" -ForegroundColor Green
+# mkdir is a function in Windows PowerShell
+if (Test-Path Function:mkdir) {
+    Remove-Item Function:mkdir -Force -ErrorAction SilentlyContinue
+}
+
+Update-WinForLinuxProfile
+
+Write-Host ""
+Write-Host "Installation complete!" -ForegroundColor Green
 Write-Host "Installed to: $InstallDir" -ForegroundColor Green
 Write-Host "Backups at: $BackupDir" -ForegroundColor Green
-Write-Host "`nTo restore original commands: .\install.ps1 -Restore" -ForegroundColor Gray
+Write-Host ""
+Write-Host "To restore original commands: .\install.ps1 -Restore" -ForegroundColor Gray
