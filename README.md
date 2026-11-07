@@ -21,6 +21,12 @@
 | `sort` / `uniq` | 排序 / 去重 |
 | `basename` / `dirname` | 路径拆分 |
 | `cp` / `mv` / `rm` / `mkdir` | 常用文件操作（`cp -r`、`rm -rf`、`mkdir -p`） |
+| `echo` / `pwd` / `tee` / `clear` | 输出、路径、分流、清屏（`echo -n/-e`，`tee -a`） |
+| `find` | 文件查找（`-name/-iname/-type/-maxdepth/-mindepth/-size/-mtime`） |
+| `sed` | 基础流编辑（`s///[gi]`、`d`、`p`、`q`，`-n/-i/-e`） |
+| `diff` | 文件差异（`-u` unified，`-q` brief） |
+| `du` / `df` | 目录占用 / 磁盘空间（`-h`，`du -s/-d`） |
+| `xargs` | 参数传递（`-n/-I/-0/-d/-r`；PowerShell 下 `{}` 请加引号） |
 | `wfl` | Linux 风格命令组合器（`\|` `&&` `\|\|` `;` `&`） |
 
 ## 安装
@@ -34,8 +40,8 @@
 
 安装脚本会：
 1. 把所有 `.exe` 拷到安装目录并加入用户 PATH
-2. 备份可能被覆盖的系统同名程序
-3. 在当前会话移除会遮挡的 PowerShell 别名（`ls`/`cat`/`cp`/`mv`/`rm`/`mkdir`/`sort`）
+2. 备份可能被覆盖的系统同名程序（如 Windows `find.exe`）
+3. 在当前会话移除会遮挡的 PowerShell 别名（`ls`/`cat`/`cp`/`mv`/`rm`/`mkdir`/`sort`/`echo`/`pwd`/`clear`/`diff`/`tee` 等）
 4. 更新 PowerShell profile：优先 win-tools，并启用 **UTF-8**（见下）
 
 请**新开一个 PowerShell 窗口**后再用。
@@ -79,6 +85,18 @@ touch newfile.txt
 mkdir -p a\b\c
 cp -r docs docs_backup
 sort file.txt | uniq
+echo -e "a\tb"
+pwd
+find . -name "*.go" -type f
+find docs -maxdepth 2 -iname "*.md"
+sed "s/foo/bar/g" file.txt
+sed -i "s/old/new/" file.txt
+diff -u a.txt b.txt
+du -sh .
+df -h
+echo one two three | xargs -n 1 echo
+# PowerShell 下 {} 是脚本块，请加引号：
+"a`nb" | xargs -I '{}' echo 'got-{}'
 ```
 
 ### 管道与命令组合
@@ -87,6 +105,7 @@ sort file.txt | uniq
 
 ```powershell
 cat README.md | grep -i win
+echo hello | tee out.txt | grep hello
 Get-Content README.md | wc -l
 ```
 
@@ -94,13 +113,15 @@ PowerShell 对 `&` / `&&` / `||` 的语义与 Linux 不完全相同。需要 Lin
 
 ```powershell
 wfl -c "echo hello | grep hello"
+wfl -c "echo -e 'a\nb' | xargs -I {} echo got-{}"
+wfl -c "find . -name *.txt | xargs cat"
 wfl -c "false || echo fallback"
 wfl -c "true && echo ok"
 wfl -c "echo bg & echo fg"
 wfl -c "ls -la ; echo done"
 ```
 
-`wfl` 会优先调用与自己同目录的 win-tools 命令。
+`wfl` 会优先调用与自己同目录的 win-tools 命令（含 `echo.exe`）。
 
 ## 开发
 
@@ -118,18 +139,8 @@ winForLinux/
 添加新命令：在 `pkg/` 与 `cmd/` 各加一处，更新 `build.ps1` 的命令列表。
 
 ```powershell
-go test ./pkg/... ./shared/...
 .\build.ps1
-go test ./test/ -v
+.\install.ps1 -AddToPath -Force
 ```
 
-## 设计说明
-
-- 每个命令编译为独立 `.exe`，放入 PATH 即可用（方案与设计文档一致）
-- 管道在宿主 shell（PowerShell）中天然可用；`&&` / `||` / `&` / `;` 由 `wfl` 提供
-- PowerShell 5.1 管道需 UTF-8 `$OutputEncoding`（由 profile 配置）；命令本身向管道写出 UTF-8 字节
-- 不追求完整 GNU 兼容，覆盖常用基础场景
-
-## 许可证
-
-MIT
+当前版本：1.2.0

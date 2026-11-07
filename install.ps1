@@ -22,7 +22,7 @@ if (Test-Path $winToolsDir) {
     }
     $env:Path = $parts -join [IO.Path]::PathSeparator
 }
-foreach ($a in @('ls','cat','cp','mv','rm','mkdir','sort','md')) {
+foreach ($a in @('ls','cat','cp','mv','rm','mkdir','sort','md','echo','pwd','clear','diff','tee')) {
     if (Get-Alias $a -ErrorAction SilentlyContinue) {
         Remove-Item "Alias:$a" -Force -ErrorAction SilentlyContinue
     }
@@ -30,6 +30,13 @@ foreach ($a in @('ls','cat','cp','mv','rm','mkdir','sort','md')) {
 # mkdir is a function in Windows PowerShell; remove so mkdir.exe is used
 if (Test-Path Function:mkdir) {
     Remove-Item Function:mkdir -Force -ErrorAction SilentlyContinue
+}
+# clear is typically an alias for Clear-Host
+if (Get-Alias clear -ErrorAction SilentlyContinue) {
+    Remove-Item Alias:clear -Force -ErrorAction SilentlyContinue
+}
+if (Get-Alias pwd -ErrorAction SilentlyContinue) {
+    Remove-Item Alias:pwd -Force -ErrorAction SilentlyContinue
 }
 # UTF-8 for console + native exe pipes (PS 5.1 defaults $OutputEncoding to ASCII,
 # which turns non-ASCII into '?' in pipes like: cat README.md | grep -i win).
@@ -153,7 +160,7 @@ if ($AddToPath) {
 }
 
 # Remove PowerShell aliases that shadow common tools
-$aliasesToRemove = @("ls", "cat", "cp", "mv", "rm", "mkdir", "sort", "echo")
+$aliasesToRemove = @("ls", "cat", "cp", "mv", "rm", "mkdir", "sort", "echo", "pwd", "clear", "diff", "tee")
 foreach ($a in $aliasesToRemove) {
     if (Get-Alias $a -ErrorAction SilentlyContinue) {
         Remove-Item "Alias:$a" -Force -ErrorAction SilentlyContinue
@@ -164,6 +171,13 @@ foreach ($a in $aliasesToRemove) {
 # mkdir is a function in Windows PowerShell
 if (Test-Path Function:mkdir) {
     Remove-Item Function:mkdir -Force -ErrorAction SilentlyContinue
+}
+# clear is typically an alias for Clear-Host
+if (Get-Alias clear -ErrorAction SilentlyContinue) {
+    Remove-Item Alias:clear -Force -ErrorAction SilentlyContinue
+}
+if (Get-Alias pwd -ErrorAction SilentlyContinue) {
+    Remove-Item Alias:pwd -Force -ErrorAction SilentlyContinue
 }
 
 Update-WinForLinuxProfile

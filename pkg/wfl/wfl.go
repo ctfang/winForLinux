@@ -198,7 +198,7 @@ func lookPath(name string) (string, error) {
 
 func isBuiltin(name string) bool {
 	switch name {
-	case "echo", "true", "false", "cd":
+	case "true", "false", "cd":
 		return true
 	}
 	return false
@@ -206,9 +206,6 @@ func isBuiltin(name string) bool {
 
 func runBuiltin(args []string, stdout, stderr io.Writer) int {
 	switch args[0] {
-	case "echo":
-		fmt.Fprintln(stdout, strings.Join(args[1:], " "))
-		return 0
 	case "true":
 		return 0
 	case "false":

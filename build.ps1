@@ -1,7 +1,7 @@
-﻿# build.ps1
+# build.ps1
 param(
     [string]$OutputDir = ".\dist",
-    [string]$Version = "1.1.0",
+    [string]$Version = "1.2.0",
     [switch]$Clean
 )
 
@@ -19,6 +19,8 @@ $commands = @(
     "head", "tail", "wc", "touch", "sort", "uniq",
     "basename", "dirname",
     "cp", "mv", "rm", "mkdir",
+    "echo", "pwd", "tee", "clear",
+    "find", "sed", "diff", "du", "df", "xargs",
     "wfl"
 )
 
